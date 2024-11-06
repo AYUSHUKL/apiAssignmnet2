@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Robot Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #fbc2eb, #a6c1ee);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #007BFF;
+            margin-bottom: 10px;
+        }
+        p {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        input[type="text"], input[type="file"] {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hello to AI Robot!</h1>
+        <p>Ask whatever you want</p>
+        <form id="generateTextForm">
+            <label for="inputText">Input Text:</label>
+            <input type="text" id="inputText" name="inputText" required>
+            <button type="submit">Generate</button>
+        </form>
+        <form id="uploadFileForm">
+            <label for="file">Upload File:</label>
+            <input type="file" id="file" name="file" required>
+            <button type="submit">Upload</button>
+        </form>
+        <div id="result"></div>
+        <audio id="audioPlayback" controls hidden></audio>
+        <button id="listenButton">Listen</button>
+    </div>
+    <script>
+        document.getElementById('generateTextForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const inputText = document.getElementById('inputText').value;
+            try {
+                const response = await fetch('http://127.0.0.1:5000/generate_text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ input_text: inputText })
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = `Generated Text: ${data.generated_text}`;
+    
+                // Read out the response
+                const ttsResponse = await fetch('http://127.0.0.1:5000/text_to_speech', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ input_text: data.generated_text })
+                });
+                const ttsData = await ttsResponse.json();
+    
+                // Set the audio source to the returned file path
+                const audioPlayback = document.getElementById('audioPlayback');
+                audioPlayback.src = `http://127.0.0.1:5000/static/${ttsData.audio_file}`;
+                audioPlayback.hidden = false;
+                audioPlayback.play();
+            } catch (error) {
+                document.getElementById('result').textContent = `Error: ${error.message}`;
+            }
+        });
+    
+        document.getElementById('uploadFileForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('file');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+                const response = await fetch('http://127.0.0.1:5000/upload_file', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = `File Summary: ${data.summary}`;
+            } catch (error) {
+                document.getElementById('result').textContent = `Error: ${error.message}`;
+            }
+        });
+    
+        // Listen for voice commands
+        document.getElementById('listenButton').addEventListener('click', function() {
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.start();
+    
+                recognition.onresult = function(event) {
+                    const inputText = event.results[0][0].transcript;
+                    console.log('Voice input:', inputText);
+                    document.getElementById('inputText').value = inputText;
+                    document.getElementById('generateTextForm').dispatchEvent(new Event('submit'));
+                };
+    
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                };
+            } else {
+                alert('Your browser does not support speech recognition.');
+            }
+        });
+    </script>
+    
+    
+    
+    
+    
+</body>
+</html>

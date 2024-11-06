@@ -1,0 +1,9 @@
+Flask
+flask-cors
+transformers
+torch
+spacy
+google-cloud-speech
+google-cloud-texttospeech
+openai== 0.28
+PyPDF2
