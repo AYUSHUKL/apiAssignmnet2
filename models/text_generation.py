@@ -1,7 +1,7 @@
 import openai
 
 def generate_text(input_text):
-    openai.api_key = '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'
+    openai.api_key = 'api'
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
